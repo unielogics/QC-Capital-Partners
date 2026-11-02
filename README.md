@@ -28,8 +28,8 @@ AWS Amplify SSR, like the funding, audit and rep apps, one Clerk instance
 across all of them. The order matters because the console's first build runs
 before the environment variables exist and fails; that is expected.
 
-1. Push `main` to `unielogics/QCCapital` (the EC2 box pushes with the
-   `github-qccapital` deploy key).
+1. Push `main` to `unielogics/QC-Capital-Partners` (the EC2 box pushes with
+   the `github-qccapital` deploy key).
 2. In the Amplify console: New app, GitHub, choose the repo and `main`.
    Connecting GitHub needs a token the CLI is never given here, so this one
    step is manual.

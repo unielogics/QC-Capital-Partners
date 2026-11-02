@@ -14,7 +14,7 @@ set -u
 export AWS_PROFILE="${AWS_PROFILE:-unie-codex-deploy}"
 export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-us-east-1}"
 
-REPO_URL="${REPO_URL:-https://github.com/unielogics/QCCapital}"
+REPO_URL="${REPO_URL:-https://github.com/unielogics/QC-Capital-Partners}"
 SOURCE_APP="${SOURCE_APP:-d2ooufj1616tzy}"          # QC-Audit: live Clerk pair + API host
 DOMAIN="qualifiedcommercial.com"
 PREFIX="capital"
