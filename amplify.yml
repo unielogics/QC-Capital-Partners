@@ -1,0 +1,37 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm install -g pnpm@10.33.3
+        - pnpm install --frozen-lockfile
+        # Amplify quirk (same as the other QC apps): console env vars reach the
+        # build but not always the SSR Lambda, so persist them to .env.production.
+        - |
+          set -e
+          : > .env.production
+          for var in NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY \
+                    CLERK_SECRET_KEY \
+                    NEXT_PUBLIC_CLERK_SIGN_IN_URL \
+                    NEXT_PUBLIC_CLERK_SIGN_UP_URL \
+                    NEXT_PUBLIC_API_URL \
+                    NEXT_PUBLIC_FUNDING_APP_URL ; do
+            val="${!var-}"
+            if [ -n "$val" ]; then
+              echo "$var=$val" >> .env.production
+              echo "  ✓ exported $var (${#val} chars)"
+            else
+              echo "  ✗ MISSING $var — set it in Amplify console → Environment variables"
+            fi
+          done
+    build:
+      commands:
+        - pnpm build
+  artifacts:
+    baseDirectory: .next
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
+      - .next/cache/**/*

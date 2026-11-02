@@ -1,0 +1,203 @@
+/* Qualified Commercial — design tokens.
+   Single source of truth for color, type scale, spacing, radius, elevation and
+   motion. Mirrors ui/styles.css; keep the two in step. Only custom properties
+   live here, so this file is safe to import above Tailwind's preflight.
+
+   Light is the default. `data-theme="dark"` on <html> flips the roles — never a
+   component's own colors — so one component definition serves the light
+   marketing site and the dark dashboard alike. */
+
+:root {
+  color-scheme: light;
+
+  /* — Core roles —
+     bg is the ground the page sits on; surface is the document that lifts off it.
+     That inversion (surface lighter than bg) is what reads "institutional" rather
+     than "app": cards behave like paper on a desk. */
+  --color-bg: #f5f7fa;
+  --color-surface: #ffffff;
+  --color-surface-sunken: #eef1f6;
+  --color-text: #0f1720;
+  --color-text-muted: #5a6675;
+  --color-accent: #1b4b9e;
+  --color-accent-2: #8a6a1f;
+  --color-divider: color-mix(in srgb, #0f1720 12%, transparent);
+  --color-divider-strong: color-mix(in srgb, #0f1720 20%, transparent);
+  /* Text that sits ON an accent fill. Paired with the accent, never assumed:
+     the vertical classes and the dark theme rebind the accent to light values
+     where white would fail, so this must travel with it. */
+  --color-on-accent: #ffffff;
+
+  /* — Tonal ramps —
+     Generated in OKLCH on one shared lightness scale, so the same step of any role
+     carries the same visual weight. Use 100–300 for tinted fills, hovers and subtle
+     borders; 600 is each role's base; 700–900 for text on tinted fills and pressed
+     states. Prefer a ramp step over an ad-hoc color-mix(). */
+  --color-neutral-100: #f4f6f8;
+  --color-neutral-200: #e6eaef;
+  --color-neutral-300: #d2d8e0;
+  --color-neutral-400: #b0b9c5;
+  --color-neutral-500: #8b97a6;
+  --color-neutral-600: #6b7787;
+  --color-neutral-700: #4e5967;
+  --color-neutral-800: #353e4a;
+  --color-neutral-900: #1f262f;
+
+  --color-accent-100: #eef3fb;
+  --color-accent-200: #d6e3f6;
+  --color-accent-300: #b3cbee;
+  --color-accent-400: #7fa8e0;
+  --color-accent-500: #4a80cd;
+  --color-accent-600: #1b4b9e;
+  --color-accent-700: #153c7e;
+  --color-accent-800: #112e60;
+  --color-accent-900: #0c2044;
+
+  --color-accent-2-100: #faf5e8;
+  --color-accent-2-200: #f2e6c8;
+  --color-accent-2-300: #e6d09b;
+  --color-accent-2-400: #d1b268;
+  --color-accent-2-500: #b8933f;
+  --color-accent-2-600: #8a6a1f;
+  --color-accent-2-700: #6d5318;
+  --color-accent-2-800: #503c12;
+  --color-accent-2-900: #33260b;
+
+  /* — Vertical accents —
+     Three industries, two extra hues. The general-business vertical inherits the
+     house blue on purpose: it is the parent offering, not a sibling brand. */
+  --vertical-realestate: #0d6e63;
+  --vertical-realestate-tint: #e6f4f1;
+  --vertical-realestate-deep: #08483f;
+  --vertical-realestate-on: #ffffff;
+  --vertical-auto: var(--color-accent-2-600);
+  --vertical-auto-tint: var(--color-accent-2-100);
+  --vertical-auto-deep: var(--color-accent-2-800);
+  --vertical-auto-on: #ffffff;
+  --vertical-business: var(--color-accent-600);
+  --vertical-business-tint: var(--color-accent-100);
+  --vertical-business-deep: var(--color-accent-800);
+  --vertical-business-on: #ffffff;
+
+  /* — Semantic —
+     Tuned to clear 4.5:1 on --color-surface so they can carry body-size text. */
+  --color-success: #0f7b4f;
+  --color-success-tint: #e6f4ec;
+  --color-warning: #a15c07;
+  --color-warning-tint: #fdf2e2;
+  --color-danger: #b42318;
+  --color-danger-tint: #fdeceb;
+
+  /* — Type —
+     Inter Tight sets headings tighter and more display-like than Inter without
+     leaving the family; Inter carries body. Numerals are tabular everywhere a
+     figure appears in a column — rates, terms, dollar amounts must align. */
+  --font-heading: "Inter Tight", "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --font-heading-weight: 600;
+
+  /* Fluid, not fixed. A 60px display and a 44px h1 are correct on a desktop
+     and absurd on a 360px phone — they overflow the viewport and force a
+     horizontal scroll. clamp() keeps the desktop sizes while letting the small
+     end land somewhere a phone can actually hold. */
+  --text-display: clamp(32px, 7.2vw, 60px);
+  --text-h1: clamp(27px, 5.4vw, 44px);
+  --text-h2: clamp(23px, 3.9vw, 34px);
+  --text-h3: clamp(20px, 2.9vw, 26px);
+  --text-h4: clamp(18px, 2.1vw, 20px);
+  --text-h5: clamp(16px, 1.7vw, 17px);
+  --text-h6: 13px;
+  --text-body: 16px;
+  --text-sm: 14px;
+  --text-xs: 12px;
+
+  /* — Spacing — 4px base, density 1.0 */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 999px;
+
+  --container: 1180px;
+  --container-narrow: 720px;
+
+  /* — Elevation —
+     Ink-tinted and shallow. Depth is a hint that something is a separate document,
+     not a special effect. Nothing in this system casts a 90px shadow. */
+  --shadow-sm: 0 1px 2px color-mix(in srgb, #0f1720 6%, transparent),
+               0 1px 1px color-mix(in srgb, #0f1720 4%, transparent);
+  --shadow-md: 0 4px 12px color-mix(in srgb, #0f1720 8%, transparent);
+  --shadow-lg: 0 12px 32px color-mix(in srgb, #0f1720 10%, transparent);
+  --shadow-xl: 0 24px 64px color-mix(in srgb, #0f1720 12%, transparent);
+
+  /* — Motion — */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 140ms;
+  --dur: 220ms;
+  --dur-slow: 420ms;
+}
+
+/* Matches <html data-theme="dark"> for the global theme, and ALSO any nested
+   element carrying the same attribute — which makes a "dark island" possible.
+   The device mockups use that: a phone screen is a dark region inside a light
+   page, and every token within it resolves to its dark value automatically
+   instead of each class being patched by hand. */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --color-bg: #0b1017;
+  --color-surface: #141c26;
+  --color-surface-sunken: #090e14;
+  --color-text: #eef2f7;
+  --color-text-muted: #97a3b4;
+  --color-accent: #7fa8e0;
+  --color-accent-2: #d1b268;
+  --color-divider: color-mix(in srgb, #eef2f7 14%, transparent);
+  --color-divider-strong: color-mix(in srgb, #eef2f7 24%, transparent);
+
+  /* Dark ground flips the verticals to light accents — so the text that sits on
+     them flips to deep ink. Without the paired -on token, a vertical-scoped
+     primary button would render white-on-light and fail contrast. */
+  --vertical-realestate: #4bbfae;
+  --vertical-realestate-tint: color-mix(in srgb, #4bbfae 16%, transparent);
+  --vertical-realestate-deep: #a5e0d7;
+  --vertical-realestate-on: #04302a;
+  --vertical-auto: var(--color-accent-2-400);
+  --vertical-auto-tint: color-mix(in srgb, var(--color-accent-2-400) 16%, transparent);
+  --vertical-auto-deep: var(--color-accent-2-200);
+  --vertical-auto-on: var(--color-accent-2-900);
+  --vertical-business: var(--color-accent-400);
+  --vertical-business-tint: color-mix(in srgb, var(--color-accent-400) 16%, transparent);
+  --vertical-business-deep: var(--color-accent-200);
+  --vertical-business-on: var(--color-accent-900);
+
+  --color-success: #4ade80;
+  --color-success-tint: color-mix(in srgb, #4ade80 14%, transparent);
+  --color-warning: #fbbf24;
+  --color-warning-tint: color-mix(in srgb, #fbbf24 14%, transparent);
+  --color-danger: #fb7185;
+  --color-danger-tint: color-mix(in srgb, #fb7185 14%, transparent);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6);
+  --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.65);
+}
+
+.v-realestate { --color-accent: var(--vertical-realestate); --color-accent-100: var(--vertical-realestate-tint); --color-accent-600: var(--vertical-realestate); --color-accent-700: var(--vertical-realestate-deep); --color-accent-800: var(--vertical-realestate-deep); --color-on-accent: var(--vertical-realestate-on); }
+.v-auto { --color-accent: var(--vertical-auto); --color-accent-100: var(--vertical-auto-tint); --color-accent-600: var(--vertical-auto); --color-accent-700: var(--vertical-auto-deep); --color-accent-800: var(--vertical-auto-deep); --color-on-accent: var(--vertical-auto-on); }
+.v-business { --color-accent: var(--vertical-business); --color-accent-100: var(--vertical-business-tint); --color-accent-600: var(--vertical-business); --color-accent-700: var(--vertical-business-deep); --color-accent-800: var(--vertical-business-deep); --color-on-accent: var(--vertical-business-on); }
