@@ -12,6 +12,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignedIn, UserButton } from "@clerk/nextjs";
+import { ConsoleSwitcher } from "@/components/ConsoleSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { INVESTING_AS, initials } from "@/lib/format";
 import { MOCK } from "@/lib/api";
@@ -94,6 +95,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
           <div className="flex items-center gap-3.5 py-2">
+            {/* The same account across the operator consoles; the server says
+                which of them this login may enter. Members have only this one. */}
+            <ConsoleSwitcher consoles={consoles} current="capital" />
             <span className={statusTag}>{me?.status_label ?? "Member"}</span>
             <Link href="/account" className="flex items-center gap-2.5 no-underline text-ink" title="Your sign-in">
               <span className="grid place-items-center w-[34px] h-[34px] rounded-full bg-accent-100 text-accent-800 text-xs font-bold">{initials(who)}</span>
