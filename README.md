@@ -21,3 +21,23 @@ cp .env.example .env.local   # fill the Clerk keys and API URL
 pnpm dev                     # http://localhost:3004
 NEXT_PUBLIC_API_MOCK=1 pnpm dev   # sample data, no backend
 ```
+
+## Deploy
+
+AWS Amplify SSR, like the funding, audit and rep apps, one Clerk instance
+across all of them. The order matters because the console's first build runs
+before the environment variables exist and fails; that is expected.
+
+1. Push `main` to `unielogics/QCCapital` (the EC2 box pushes with the
+   `github-qccapital` deploy key).
+2. In the Amplify console: New app, GitHub, choose the repo and `main`.
+   Connecting GitHub needs a token the CLI is never given here, so this one
+   step is manual.
+3. From the box: `scripts/amplify-wire.sh wire` copies the live Clerk pair
+   and API host from the audit app, sets the portal's own variables, puts
+   `main` in production, attaches `capital.qualifiedcommercial.com` (apex plus
+   prefix, Route 53 records added by Amplify) and starts a build.
+   `scripts/amplify-wire.sh status` follows the build and the domain.
+4. Clerk Dashboard: add `https://capital.qualifiedcommercial.com` to the
+   allowed origins. There is no CLI for it, and without it sign-in is refused
+   after a green build.
