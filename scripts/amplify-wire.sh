@@ -4,6 +4,7 @@
 # a token the CLI cannot be given here, so that one step is manual).
 #
 #   scripts/amplify-wire.sh wire    [APP_ID]   set env vars, branch, domain; start a build
+#   scripts/amplify-wire.sh build   [APP_ID]   start a release build of main
 #   scripts/amplify-wire.sh status  [APP_ID]   latest build job + domain status
 #
 # APP_ID is optional: without it the app is found by its GitHub repository.
@@ -99,8 +100,11 @@ wire() {
 
   # 4. Build with the env vars in place (the console's first build ran without them).
   local job
-  job="$(aws amplify start-job --app-id "$app_id" --branch-name "$BRANCH" --job-type RELEASE --query 'jobSummary.jobId' --output text | head -1 | tr -cd '0-9')"
-  echo "build: job $job started; run '$0 status $app_id' to follow it"
+  if job="$(aws amplify start-job --app-id "$app_id" --branch-name "$BRANCH" --job-type RELEASE --query 'jobSummary.jobId' --output text 2>&1)"; then
+    echo "build: job $(echo "$job" | head -1 | tr -cd '0-9') started; run '$0 status $app_id' to follow it"
+  else
+    echo "build: not started, a job is already pending or running; when it ends run '$0 build $app_id'"
+  fi
   echo
   echo "MANUAL, no CLI: add https://$PREFIX.$DOMAIN to the Clerk Dashboard allowed origins,"
   echo "or sign-in on the portal will be refused after a green build."
@@ -120,8 +124,15 @@ status() {
   echo "https://$PREFIX.$DOMAIN"
 }
 
+build() {
+  resolve_app
+  aws amplify start-job --app-id "$app_id" --branch-name "$BRANCH" --job-type RELEASE \
+    --query 'jobSummary.{job:jobId,status:status}' --output json
+}
+
 case "$mode" in
   wire) wire ;;
+  build) build ;;
   status) status ;;
   *) sed -n '2,11p' "$0"; exit 2 ;;
 esac
