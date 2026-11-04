@@ -21,6 +21,76 @@ const x = (v: number | null | undefined) => (v == null ? "—" : `${Number(v).to
 const signed = (v: number | null | undefined, render: (n: number) => string) => (v == null ? "—" : `${v > 0 ? "+" : v < 0 ? "−" : ""}${render(Math.abs(v))}`);
 
 /** The underwriting figures behind the offering: the file as read, the desk's plan, and the result side by side. */
+/** The payment schedule as a picture: principal and interest per period, and the principal still out (the investor's exposure) falling to zero. */
+function ScheduleChart({ rows }: { rows: NonNullable<NonNullable<ListingFinancials["proposed_terms"]>["schedule_rows"]> }) {
+  const W = 660; const H = 230; const padL = 56; const padR = 48; const padT = 18; const padB = 30;
+  const plotW = W - padL - padR; const plotH = H - padT - padB;
+  const n = Math.max(1, rows.length);
+  const vmax = Math.max(1, ...rows.map((r) => r.payment)) * 1.15;
+  const slot = plotW / n; const barW = Math.max(1.5, Math.min(14, slot * 0.68));
+  const px = (i: number) => padL + slot * (i + 0.5);
+  const py = (v: number) => padT + plotH - (v / vmax) * plotH;
+  const pyPct = (v: number) => padT + plotH - (v / 100) * plotH;
+  const every = n <= 24 ? 1 : n <= 60 ? 3 : 12;
+  const exposure = [`${padL},${pyPct(100)}`, ...rows.map((r, i) => `${px(i).toFixed(1)},${pyPct(r.exposure_pct).toFixed(1)}`)].join(" ");
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label="Payment schedule: principal and interest per period, and the principal still out">
+      {[0, 0.25, 0.5, 0.75, 1].map((f) => (
+        <g key={f}>
+          <line x1={padL} x2={W - padR} y1={padT + plotH - f * plotH} y2={padT + plotH - f * plotH} className="stroke-divider" strokeWidth={1} />
+          <text x={padL - 6} y={padT + plotH - f * plotH + 3} textAnchor="end" className="fill-mutedFg" fontSize={9}>{compact(vmax * f)}</text>
+          <text x={W - padR + 6} y={padT + plotH - f * plotH + 3} textAnchor="start" className="fill-danger" fontSize={9}>{Math.round(100 * f)}%</text>
+        </g>
+      ))}
+      {rows.map((r, i) => (
+        <g key={r.period}>
+          {r.principal > 0 ? <rect x={px(i) - barW / 2} y={py(r.principal)} width={barW} height={py(0) - py(r.principal)} className="fill-accent" /> : null}
+          {r.interest > 0 ? <rect x={px(i) - barW / 2} y={py(r.principal + r.interest)} width={barW} height={py(r.principal) - py(r.principal + r.interest)} className="fill-accent-300" opacity={r.phase === "interest_only" ? 0.7 : 1} /> : null}
+          {r.period === 1 || r.period % every === 0 ? <text x={px(i)} y={padT + plotH + 14} textAnchor="middle" className="fill-mutedFg" fontSize={9}>{r.period}</text> : null}
+        </g>
+      ))}
+      <polyline points={exposure} fill="none" className="stroke-danger" strokeWidth={2.2} />
+    </svg>
+  );
+}
+
+function ProposedTermsCard({ t }: { t: NonNullable<ListingFinancials["proposed_terms"]> }) {
+  const rows = t.schedule_rows ?? [];
+  const risk = t.risk;
+  const s = t.schedule ?? {};
+  const milestones = risk?.recovery_milestones ?? s.recovery_milestones ?? {};
+  const wal = risk?.weighted_average_life_months ?? s.weighted_average_life_months ?? null;
+  const exposed = risk?.full_exposure_months ?? s.full_exposure_months ?? 0;
+  return (
+    <div className="card">
+      <span className="card-kicker">Proposed terms and the principal at risk</span>
+      <p className="m-0 text-sm text-mutedFg">
+        <strong className="text-ink">{t.amount != null ? usd(t.amount) : "—"}{t.rate_pct != null ? ` at ${t.rate_pct}%` : ""}{t.describe ? ` ${t.describe}` : ""}.</strong>
+        {t.payment_io_monthly != null && t.payment_after_monthly != null ? ` ${usd(t.payment_io_monthly)} a month for ${t.interest_only_months} months, then ${usd(t.payment_after_monthly)} a month.` : t.monthly_payment != null ? ` ${usd(t.monthly_payment)} a month${t.interest_only ? " of interest, principal at maturity" : ""}.` : ""}
+        {t.source === "term_sheet" && t.label ? ` ${t.label}.` : ""}
+      </p>
+      {rows.length ? <ScheduleChart rows={rows} /> : null}
+      {rows.length ? (
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-mutedFg">
+          <span><span className="inline-block w-3 h-2 rounded-sm bg-accent align-middle mr-1" />Principal</span>
+          <span><span className="inline-block w-3 h-2 rounded-sm bg-accent-300 align-middle mr-1" />Interest</span>
+          <span><span className="inline-block w-3 h-0.5 bg-danger align-middle mr-1" />Principal still out</span>
+        </div>
+      ) : null}
+      {risk?.words ? <p className="m-0 text-sm text-mutedFg"><strong className="text-ink">Principal at risk.</strong> {risk.words}</p> : null}
+      <dl className="program-specs m-0 border-t-0 pt-0">
+        {wal != null ? <div className="program-spec"><dt>Weighted average life</dt><dd>{wal} months</dd></div> : null}
+        {milestones["50"] != null || milestones["100"] != null ? <div className="program-spec"><dt>Principal back</dt><dd>{[milestones["50"] != null ? `half by month ${milestones["50"]}` : null, milestones["100"] != null ? `all by month ${milestones["100"]}` : null].filter(Boolean).join(", ")}</dd></div> : null}
+        {exposed ? <div className="program-spec"><dt>Fully exposed</dt><dd>{exposed} months before principal starts</dd></div> : null}
+        {s.balloon ? <div className="program-spec"><dt>Due at maturity</dt><dd>{usd(s.balloon)}{s.balloon_pct != null ? ` (${s.balloon_pct}% of the loan)` : ""}</dd></div> : null}
+        {risk?.lowest_coverage != null ? <div className="program-spec"><dt>Lowest coverage on a payment</dt><dd>{x(risk.lowest_coverage)}{risk.coverage_during_interest_only != null && risk.coverage_after_interest_only != null && risk.coverage_during_interest_only !== risk.coverage_after_interest_only ? ` (${x(risk.coverage_during_interest_only)} during the interest-only months, ${x(risk.coverage_after_interest_only)} once principal starts)` : ""}</dd></div> : null}
+        {s.total_interest != null ? <div className="program-spec"><dt>Interest over the term · total paid</dt><dd>{usd(s.total_interest)} · {s.total_paid != null ? usd(s.total_paid) : "—"}</dd></div> : null}
+      </dl>
+      {t.payment_note ? <p className="m-0 text-xs text-mutedFg">{t.payment_note}</p> : null}
+    </div>
+  );
+}
+
 function UnderwritingFigures({ f }: { f: ListingFinancials }) {
   const plan = f.plan;
   const impact = plan?.impact ?? {};
@@ -199,6 +269,7 @@ export default function OfferingPage() {
                   <p className="m-0 text-sm text-mutedFg"><strong className="text-ink">Exit plan.</strong> {l.exit_plan ?? "Described in the memorandum."}</p>
                 </div>
                 {l.financials ? <UnderwritingFigures f={l.financials} /> : null}
+                {l.financials?.proposed_terms?.amount ? <ProposedTermsCard t={l.financials.proposed_terms} /> : null}
                 <div className="card">
                   <span className="card-kicker">Offering documents</span>
                   {l.documents.length === 0 ? <span className="text-sm text-mutedFg">Documents are being prepared.</span> : (

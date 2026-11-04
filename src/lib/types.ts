@@ -43,6 +43,14 @@ export type ListingFinancials = {
   debt_service_after_monthly?: number | null; annual_debt_service?: number | null;
   net_profit?: number | null; net_profit_basis?: string | null; net_profit_period?: string | null;
   tax_year?: string | null; tax_gross_receipts?: number | null; tax_income?: number | null;
+  /** The proposed terms with the payment schedule and the principal at risk, as the desk published them. */
+  proposed_terms?: {
+    source: "term_sheet" | "plan"; label: string | null; amount: number | null; rate_pct: number | null; term_months: number | null; structure?: string | null; structure_label?: string | null;
+    interest_only?: boolean; interest_only_months?: number; monthly_payment?: number | null; payment_io_monthly?: number | null; payment_after_monthly?: number | null; describe?: string; payment_note?: string | null;
+    schedule?: { total_interest?: number; total_paid?: number; balloon?: number; balloon_pct?: number; weighted_average_life_months?: number; recovery_milestones?: Record<string, number | null>; full_exposure_months?: number; periods_per_year?: number } | null;
+    schedule_rows?: { period: number; month: number; phase: string; payment: number; interest: number; principal: number; balance: number; balloon?: number; exposure_pct: number; recovered_pct: number }[];
+    risk?: { weighted_average_life_months: number | null; recovery_milestones: Record<string, number | null>; full_exposure_months: number | null; balloon: number; balloon_pct: number; coverage_by_period: { period: number; month: number; phase: string; payment_monthly: number; coverage: number | null }[]; coverage_during_interest_only: number | null; coverage_after_interest_only: number | null; lowest_coverage: number | null; lowest_coverage_month: number | null; words: string } | null;
+  } | null;
   plan?: {
     modifications: { kind: string | null; label: string | null; detail: string | null }[];
     impact: {
