@@ -33,6 +33,7 @@ function ScheduleChart({ rows }: { rows: NonNullable<NonNullable<ListingFinancia
   const pyPct = (v: number) => padT + plotH - (v / 100) * plotH;
   const every = n <= 24 ? 1 : n <= 60 ? 3 : 12;
   const exposure = [`${padL},${pyPct(100)}`, ...rows.map((r, i) => `${px(i).toFixed(1)},${pyPct(r.exposure_pct).toFixed(1)}`)].join(" ");
+  const atRisk = rows.every((r) => r.cash_at_risk_pct != null) ? [`${padL},${pyPct(100)}`, ...rows.map((r, i) => `${px(i).toFixed(1)},${pyPct(r.cash_at_risk_pct as number).toFixed(1)}`)].join(" ") : null;
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label="Payment schedule: principal and interest per period, and the principal still out">
       {[0, 0.25, 0.5, 0.75, 1].map((f) => (
@@ -50,6 +51,7 @@ function ScheduleChart({ rows }: { rows: NonNullable<NonNullable<ListingFinancia
         </g>
       ))}
       <polyline points={exposure} fill="none" className="stroke-danger" strokeWidth={2.2} />
+      {atRisk ? <polyline points={atRisk} fill="none" className="stroke-warning" strokeWidth={2} strokeDasharray="5 3" /> : null}
     </svg>
   );
 }
@@ -75,6 +77,7 @@ function ProposedTermsCard({ t }: { t: NonNullable<ListingFinancials["proposed_t
           <span><span className="inline-block w-3 h-2 rounded-sm bg-accent align-middle mr-1" />Principal</span>
           <span><span className="inline-block w-3 h-2 rounded-sm bg-accent-300 align-middle mr-1" />Interest</span>
           <span><span className="inline-block w-3 h-0.5 bg-danger align-middle mr-1" />Principal still out</span>
+          <span><span className="inline-block w-3 h-0.5 bg-warning align-middle mr-1" style={{ borderTop: "2px dashed currentColor", height: 0 }} />Capital at risk, counting interest received</span>
         </div>
       ) : null}
       {risk?.words ? <p className="m-0 text-sm text-mutedFg"><strong className="text-ink">Principal at risk.</strong> {risk.words}</p> : null}
@@ -82,6 +85,7 @@ function ProposedTermsCard({ t }: { t: NonNullable<ListingFinancials["proposed_t
         {wal != null ? <div className="program-spec"><dt>Weighted average life</dt><dd>{wal} months</dd></div> : null}
         {milestones["50"] != null || milestones["100"] != null ? <div className="program-spec"><dt>Principal back</dt><dd>{[milestones["50"] != null ? `half by month ${milestones["50"]}` : null, milestones["100"] != null ? `all by month ${milestones["100"]}` : null].filter(Boolean).join(", ")}</dd></div> : null}
         {exposed ? <div className="program-spec"><dt>Fully exposed</dt><dd>{exposed} months before principal starts</dd></div> : null}
+        {(risk?.breakeven_month ?? s.breakeven_month) ? <div className="program-spec"><dt>Capital back, counting interest</dt><dd>month {risk?.breakeven_month ?? s.breakeven_month}: nothing at risk after that</dd></div> : null}
         {s.balloon ? <div className="program-spec"><dt>Due at maturity</dt><dd>{usd(s.balloon)}{s.balloon_pct != null ? ` (${s.balloon_pct}% of the loan)` : ""}</dd></div> : null}
         {risk?.lowest_coverage != null ? <div className="program-spec"><dt>Lowest coverage on a payment</dt><dd>{x(risk.lowest_coverage)}{risk.coverage_during_interest_only != null && risk.coverage_after_interest_only != null && risk.coverage_during_interest_only !== risk.coverage_after_interest_only ? ` (${x(risk.coverage_during_interest_only)} during the interest-only months, ${x(risk.coverage_after_interest_only)} once principal starts)` : ""}</dd></div> : null}
         {s.total_interest != null ? <div className="program-spec"><dt>Interest over the term · total paid</dt><dd>{usd(s.total_interest)} · {s.total_paid != null ? usd(s.total_paid) : "—"}</dd></div> : null}
