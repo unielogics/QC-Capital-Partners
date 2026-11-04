@@ -33,9 +33,28 @@ export type Subscription = {
   status: "requested" | "documents_sent" | "signed" | "funded" | "cancelled" | "declined"; requested_at: string; documents_sent_at: string | null;
   signed_at: string | null; funded_at: string | null; funded_amount: string | null;
 };
+/** Original / with the plan / change, as the desk's cockpit computed it. */
+export type PlanPair = { before: number | null; after: number | null; change: number | null };
+export type ListingFinancials = {
+  generated_at?: string | null; refreshed_at?: string | null;
+  bank_months?: number | null; bank_months_accepted?: number | null; avg_monthly_deposits?: number | null; annualized_deposits?: number | null;
+  avg_monthly_net?: number | null; average_balance?: number | null; nsf_total?: number | null; deposit_trend_pct?: number | null;
+  dscr?: number | null; dscr_basis?: string | null; dscr_status?: string | null; pro_forma_dscr?: number | null; dscr_after_plan?: number | null;
+  debt_service_after_monthly?: number | null; annual_debt_service?: number | null;
+  net_profit?: number | null; net_profit_basis?: string | null; net_profit_period?: string | null;
+  tax_year?: string | null; tax_gross_receipts?: number | null; tax_income?: number | null;
+  plan?: {
+    modifications: { kind: string | null; label: string | null; detail: string | null }[];
+    impact: {
+      dscr?: PlanPair & { basis?: string | null }; income_annual?: PlanPair; debt_service_monthly?: PlanPair; net_cash_flow_monthly?: PlanPair;
+      ending_balance?: PlanPair; months_negative?: PlanPair; loan?: { amount?: number; rate_pct?: number; term_months?: number | null; interest_only?: boolean; payment_monthly?: number | null } | null;
+    };
+  };
+};
 export type ListingDetail = Listing & {
   summary: string | null; guarantee_text: string | null; borrower_track_record: string | null; exit_plan: string | null; valuation_amount: string | null;
   valuation_source: string | null; title_status: string | null; servicer_label: string | null; documents: Document[]; my_subscriptions: Subscription[]; can_subscribe: boolean;
+  financials?: ListingFinancials | null;
 };
 export type Facet = { value: string; label: string; count: number };
 export type ListingsPage = {
