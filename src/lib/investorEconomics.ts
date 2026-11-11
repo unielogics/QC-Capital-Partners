@@ -1,0 +1,11 @@
+export type InvestorFee = { label: string; category: string; payer: string; method: string; value: number | null; basis: string; timing: string; settlement: string; applicability?: string; total_amount?: number | null; status?: string; applies?: boolean | null };
+export type InvestorScenario = { status: string; horizon_months?: number | null; payoff_month?: number | null; principal_returned?: number | null; gross_interest?: number | null; total_fees?: number | null; initial_outlay?: number | null; net_income?: number | null; net_roi_pct?: number | null; net_cash_profit?: number | null; net_cash_received?: number | null; reserve_held?: number | null; reserve_released?: number | null; minimum_interest_charge?: number | null; payoff_charge_income?: number | null; missing_assumptions?: string[]; assumptions?: string[]; rows?: InvestorFee[] };
+export type InvestorBudget = { currency?: string; servicing_mode?: "not_set" | "company_managed" | "transferred"; software_monitoring?: { software_status: string; monitoring_status: string }; calculation?: { investor_funding_amount?: number | null; investor_net_roi_pct?: number | null; setup_readiness?: { status: string; note?: string }; investor_scenarios?: { six_month_payoff?: InvestorScenario; full_term?: InvestorScenario } } };
+export function investorMoney(value: number | null | undefined, currency: string | null = "USD"): string {
+  if (value == null || !Number.isFinite(value)) return "Not established";
+  if (!currency) return `${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} · currency not confirmed`;
+  try { return new Intl.NumberFormat("en-US", { style: "currency", currency, currencyDisplay: "code" }).format(value); }
+  catch { return `${currency} ${value.toFixed(2)}`; }
+}
+const MISSING: Record<string, string> = { interest_policy: "Early payoff interest policy has not been confirmed.", charge_amount: "The additional payoff charge has not been confirmed.", charge_recipient: "The payoff charge recipient has not been confirmed.", minimum_interest_months: "The contractual minimum interest months need review.", reserve_release: "The investor reserve release needs confirmation.", repayment_schedule: "The repayment schedule needs completion." };
+export const payoffMissing = (value: string) => MISSING[value] ?? value;

@@ -25,9 +25,9 @@ export type Listing = {
   ltv_pct: string | null; ltv_kind: "ltv" | "ltc" | "cltv"; minimum_investment: string | null; loan_amount: string | null; offered_amount: string | null;
   committed_amount: string; remaining_amount: string; pct_committed: number; payment_frequency: "monthly" | "quarterly" | "at_maturity";
   personal_guarantee: boolean; status: ListingStatus; outcome: string | null; opens_at: string | null; closes_at: string | null; days_left: number | null;
-  funded_at: string | null; repaid_at: string | null; maturity_date: string | null; published_at: string | null;
+  funded_at: string | null; repaid_at: string | null; maturity_date: string | null; expected_funding_date?: string | null; maturity_date_mode?: "automatic" | "manual"; date_note?: string | null; published_at: string | null;
 };
-export type Document = { id: string; kind: string; kind_label: string; name: string; content_type: string | null; size_bytes: number | null; version: number; status: string };
+export type Document = { id: string; kind: string; kind_label: string; name: string; content_type: string | null; size_bytes: number | null; version: number; status: string; source?: "generated_package" | "uploaded" };
 export type Subscription = {
   id: string; listing_id: string; listing_ref: string | null; listing_name: string | null; entity_id: string | null; entity_name: string | null; amount: string;
   status: "requested" | "documents_sent" | "signed" | "funded" | "cancelled" | "declined"; requested_at: string; documents_sent_at: string | null;
@@ -36,6 +36,7 @@ export type Subscription = {
 /** Original / with the plan / change, as the desk's cockpit computed it. */
 export type PlanPair = { before: number | null; after: number | null; change: number | null };
 export type ListingFinancials = {
+  deal_budget?: import("./investorEconomics").InvestorBudget | null;
   generated_at?: string | null; refreshed_at?: string | null;
   bank_months?: number | null; bank_months_accepted?: number | null; avg_monthly_deposits?: number | null; annualized_deposits?: number | null;
   avg_monthly_net?: number | null; average_balance?: number | null; nsf_total?: number | null; deposit_trend_pct?: number | null;
