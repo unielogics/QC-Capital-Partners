@@ -21,41 +21,44 @@ export function useToken() {
 }
 
 export function useMe() {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, isLoaded: authLoaded, userId, sessionId } = useAuth();
   const { isLoaded } = useUser();
   const token = useToken();
-  const signedIn = MOCK ? true : isSignedIn === true;
+  const signedIn = MOCK ? true : isSignedIn === true && authLoaded && isLoaded;
+  const viewerKey = MOCK ? "mock-capital-viewer" : signedIn && userId && sessionId ? `${userId}:${sessionId}` : null;
 
   const auth = useQuery({
-    queryKey: ["auth-me"],
+    queryKey: ["auth-me", viewerKey],
     queryFn: async () => api<AuthMe>("/auth/me", { authToken: await token() }),
-    enabled: signedIn,
+    enabled: Boolean(viewerKey),
     staleTime: 60_000,
   });
-  const consoles = auth.data?.consoles ?? [];
-  const canEnter = auth.data ? (auth.data.consoles ? consoles.some((c) => c.key === "capital") : auth.data.role === "capital_partner") : false;
+  const currentAuth = viewerKey && !auth.isError ? auth.data ?? null : null;
+  const consoles = currentAuth?.consoles ?? [];
+  const canEnter = currentAuth ? (currentAuth.consoles ? consoles.some((c) => c.key === "capital") : currentAuth.role === "capital_partner") : false;
 
   const cp = useQuery({
-    queryKey: ["capital-me"],
+    queryKey: ["capital-me", viewerKey],
     queryFn: async () => api<Me>("/capital/me", { authToken: await token() }),
-    enabled: signedIn && canEnter,
+    enabled: Boolean(viewerKey) && canEnter,
     staleTime: 30_000,
   });
 
-  const me = cp.data ?? null;
+  const me = viewerKey && canEnter && !cp.isError ? cp.data ?? null : null;
   return {
-    auth: auth.data ?? null,
+    auth: currentAuth,
+    viewerKey,
     me,
     consoles,
     canEnter,
     preview: me?.preview ?? false,
     cleared: me?.preview ? true : me?.gate?.cleared ?? false,
     status: me?.status ?? null,
-    isResolving: (!MOCK && !isLoaded) || (signedIn && (auth.isLoading || (canEnter && cp.isLoading))),
-    error: auth.error ?? cp.error ?? null,
+    isResolving: (!MOCK && (!authLoaded || !isLoaded || signedIn && !viewerKey)) || (Boolean(viewerKey) && (auth.isLoading || (canEnter && cp.isLoading))),
+    error: viewerKey ? auth.error ?? cp.error ?? null : null,
     refetch: () => {
-      void auth.refetch();
-      void cp.refetch();
+      if (viewerKey) void auth.refetch();
+      if (viewerKey && canEnter) void cp.refetch();
     },
   };
 }

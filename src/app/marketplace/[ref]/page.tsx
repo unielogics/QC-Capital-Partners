@@ -15,6 +15,9 @@ import { compact, FREQ, LIEN, months, pct, STATUS, SUB_STATUS, usd } from "@/lib
 import { useApiQuery } from "@/lib/hooks";
 import { VERTICAL_CLASS, type ListingDetail, type ListingFinancials, type PlanPair, type Subscription } from "@/lib/types";
 import { useMe, useToken } from "@/lib/useMe";
+import { InvestorNetReturns } from "@/components/InvestorNetReturns";
+import { OfferingFileCockpit } from "@/components/OfferingFileCockpit";
+import { useDocumentLink } from "@/lib/useDocumentLink";
 
 const BASIS: Record<string, string> = { tax_return: "tax return", profit_and_loss: "profit and loss", bank_cash_flow: "bank cash flow", desk_override: "desk figure" };
 const x = (v: number | null | undefined) => (v == null ? "—" : `${Number(v).toFixed(2)}x`);
@@ -142,13 +145,21 @@ function UnderwritingFigures({ f }: { f: ListingFinancials }) {
 }
 
 export default function OfferingPage() {
+  const account = useMe(), params = useParams<{ ref: string }>();
+  const scope = account.viewerKey && !account.isResolving && (account.cleared || account.preview) ? account.viewerKey : "unresolved";
+  return <OfferingDetail key={`${params?.ref ?? ""}:${scope}`} account={account} />;
+}
+
+function OfferingDetail({ account }: { account: ReturnType<typeof useMe> }) {
   const params = useParams<{ ref: string }>();
   const ref = (params?.ref ?? "").toUpperCase();
   const router = useRouter();
   const qc = useQueryClient();
   const token = useToken();
-  const { me, preview, cleared, isResolving } = useMe();
-  const { data: l, error, isLoading } = useApiQuery<ListingDetail>(["listing", ref], `/capital/listings/${ref}`, !!ref && (cleared || preview));
+  const { me, preview, cleared, isResolving, viewerKey } = account;
+  const allowed = Boolean(viewerKey) && !isResolving && (cleared || preview);
+  const { data: listing, error, isLoading } = useApiQuery<ListingDetail>(["listing", ref, viewerKey], `/capital/listings/${ref}`, !!ref && allowed);
+  const l = allowed ? listing : undefined;
   const [amount, setAmount] = useState("");
   const [entityId, setEntityId] = useState<string>("");
   const [ack1, setAck1] = useState(false);
@@ -156,6 +167,7 @@ export default function OfferingPage() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [reserved, setReserved] = useState<Subscription | null>(null);
+  const documentLinks = useDocumentLink(`${ref}:${viewerKey ?? "anonymous"}:${allowed}`);
 
   useEffect(() => {
     if (!isResolving && !cleared && !preview) router.replace("/");
@@ -187,8 +199,7 @@ export default function OfferingPage() {
     if (!l) return;
     setErr(null);
     try {
-      const { url } = await api<{ url: string; expires_in_seconds: number }>(`/capital/listings/${l.ref}/documents/${docId}/url`, { method: "POST", authToken: await token() });
-      window.open(url, "_blank", "noopener");
+      await documentLinks.open(`/capital/listings/${l.ref}/documents/${docId}/url`);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Could not open the document.");
     }
@@ -232,11 +243,13 @@ export default function OfferingPage() {
             <div className="p-7 grid grid-cols-1 nav:grid-cols-[minmax(0,1fr)_380px] gap-7 items-start">
               <div className="grid gap-5 min-w-0">
                 <div className="proof-bar px-6 py-5 gap-5">
-                  <div className="stat"><span className="stat-value">{pct(l.note_rate_pct)}</span><span className="stat-label">Note rate</span></div>
+                  <div className="stat"><span className="stat-value">{pct(l.note_rate_pct)}</span><span className="stat-label">Gross note rate</span></div>
                   <div className="stat"><span className="stat-value">{months(l.term_months)}</span><span className="stat-label">Term</span></div>
                   <div className="stat"><span className="stat-value">{pct(l.ltv_pct, 0)}</span><span className="stat-label">{l.ltv_kind.toUpperCase()}</span></div>
                   <div className="stat"><span className="stat-value">{compact(l.minimum_investment)}</span><span className="stat-label">Minimum</span></div>
                 </div>
+                <InvestorNetReturns budget={l.financials?.deal_budget} />
+                <OfferingFileCockpit key={`${l.ref}:${viewerKey}`} listingRef={l.ref} viewerId={viewerKey} enabled={allowed} />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className="card">
                     <span className="card-kicker">Loan summary</span>
@@ -247,9 +260,11 @@ export default function OfferingPage() {
                       <div className="program-spec"><dt>Payments</dt><dd>{FREQ[l.payment_frequency]}</dd></div>
                       <div className="program-spec"><dt>Personal guarantee</dt><dd>{l.personal_guarantee ? "Yes" : "No"}</dd></div>
                       <div className="program-spec"><dt>Program</dt><dd>{l.program_label}</dd></div>
-                      <div className="program-spec"><dt>Servicer</dt><dd>{l.servicer_label ?? "Independent third party"}</dd></div>
-                      {l.maturity_date ? <div className="program-spec"><dt>Maturity</dt><dd>{l.maturity_date}</dd></div> : null}
+                      <div className="program-spec"><dt>Servicer</dt><dd>{l.servicer_label ?? (l.financials?.deal_budget?.servicing_mode === "company_managed" ? "Company managed" : l.financials?.deal_budget?.servicing_mode === "transferred" ? "Servicing transferred" : "Not confirmed")}</dd></div>
+                      <div className="program-spec"><dt>Estimated funding</dt><dd>{l.expected_funding_date ?? "Not established"}</dd></div>
+                      {l.maturity_date ? <div className="program-spec"><dt>Estimated maturity</dt><dd>{l.maturity_date}</dd></div> : null}
                     </dl>
+                    <p className="m-0 text-xs text-mutedFg">{l.date_note || "Estimated dates may change with funding timing and final closing terms."}</p>
                   </div>
                   <div className="card">
                     <span className="card-kicker">Collateral and valuation</span>
@@ -279,9 +294,9 @@ export default function OfferingPage() {
                   {l.documents.length === 0 ? <span className="text-sm text-mutedFg">Documents are being prepared.</span> : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       {l.documents.map((d) => (
-                        <button key={d.id} type="button" onClick={() => void openDoc(d.id)} className="flex items-center gap-2.5 py-2.5 px-3 border border-divider rounded-md text-sm text-ink bg-transparent text-left hover:border-accent-300 hover:bg-[var(--color-neutral-100)] cursor-pointer">
+                        <button key={d.id} type="button" disabled={documentLinks.pending || d.status !== "ready"} onClick={() => void openDoc(d.id)} className="flex items-center gap-2.5 py-2.5 px-3 border border-divider rounded-md text-sm text-ink bg-transparent text-left hover:border-accent-300 hover:bg-[var(--color-neutral-100)] cursor-pointer">
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="flex-none text-mutedFg"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><path d="M14 2v6h6" /></svg>
-                          <span className="flex-1">{d.kind_label}</span><span className="text-xs text-mutedFg">PDF</span>
+                          <span className="flex-1">{d.kind_label}<small className="block text-mutedFg">{d.source === "generated_package" ? "Generated listing package" : "Offering document"} · v{d.version} · {d.status}</small></span><span className="text-xs text-mutedFg">PDF</span>
                         </button>
                       ))}
                     </div>
@@ -320,7 +335,7 @@ export default function OfferingPage() {
                         <input id="sub-amt" className="input num" inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={compact(l.minimum_investment)} />
                         <span className="field-hint" style={{ color: amt && !amtOk ? "var(--color-danger)" : undefined }}>{amt && !amtOk ? `Enter between ${usd(min)} and ${usd(remaining)}.` : `Minimum ${usd(min)} · up to ${usd(remaining)} available`}</span>
                       </div>
-                      <div className="readout px-4 py-3"><span className="readout-label">Estimated interest per year</span><span className="readout-value num text-h4">{amtOk ? usd(amt * Number(l.note_rate_pct ?? 0) / 100) : "—"}</span></div>
+                      <div className="readout px-4 py-3"><span className="readout-label">Full-offering NET ROI · full term</span><span className="readout-value num text-h4">{l.financials?.deal_budget?.calculation?.investor_scenarios?.full_term?.net_roi_pct == null ? "Not established" : `${l.financials.deal_budget.calculation.investor_scenarios.full_term.net_roi_pct.toFixed(2)}%`}</span><small className="text-mutedFg">See the fee deductions and six-month comparison. This is not an annualized yield or an individual after-tax return.</small></div>
                       <label className="flex gap-2.5 text-[13px] text-mutedFg cursor-pointer"><input type="checkbox" className="w-4 h-4 flex-none mt-0.5 accent-accent-600" checked={ack1} onChange={(e) => setAck1(e.target.checked)} /><span>I have read the private placement memorandum, including its risk factors.</span></label>
                       <label className="flex gap-2.5 text-[13px] text-mutedFg cursor-pointer"><input type="checkbox" className="w-4 h-4 flex-none mt-0.5 accent-accent-600" checked={ack2} onChange={(e) => setAck2(e.target.checked)} /><span>I confirm that I, or the entity I am investing through, remain an accredited investor.</span></label>
                       {err ? <div className="text-[var(--color-danger)] text-sm font-semibold" role="alert">{err}</div> : null}
