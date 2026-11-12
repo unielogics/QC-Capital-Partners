@@ -34,10 +34,6 @@ async function unwrap<T>(res: Response): Promise<T> {
     let code: string | null = null;
     if (typeof detail === "string") {
       message = detail;
-    } else if (detail && typeof detail === "object") {
-      const d = detail as { message?: unknown; code?: unknown };
-      if (typeof d.message === "string") message = d.message;
-      if (typeof d.code === "string") code = d.code;
     } else if (Array.isArray(detail)) {
       const issues = detail
         .map((item) => {
@@ -49,6 +45,10 @@ async function unwrap<T>(res: Response): Promise<T> {
         })
         .filter((x): x is string => Boolean(x));
       if (issues.length) message = issues.join("; ");
+    } else if (detail && typeof detail === "object") {
+      const d = detail as { message?: unknown; code?: unknown };
+      if (typeof d.message === "string") message = d.message;
+      if (typeof d.code === "string") code = d.code;
     }
     throw new ApiError(res.status, message, body, code);
   }
