@@ -248,7 +248,7 @@ function OfferingDetail({ account }: { account: ReturnType<typeof useMe> }) {
                   <div className="stat"><span className="stat-value">{pct(l.ltv_pct, 0)}</span><span className="stat-label">{l.ltv_kind.toUpperCase()}</span></div>
                   <div className="stat"><span className="stat-value">{compact(l.minimum_investment)}</span><span className="stat-label">Minimum</span></div>
                 </div>
-                <InvestorNetReturns budget={l.financials?.deal_budget} />
+                <InvestorNetReturns key={`${l.ref}:${viewerKey}`} budget={l.financials?.deal_budget} listingRef={l.ref} viewerKey={viewerKey} sourceKey={JSON.stringify([viewerKey, l.ref, l.financials?.deal_budget?.revision ?? null, l.financials?.refreshed_at ?? l.financials?.generated_at ?? null, l.documents.filter(document => document.kind === "ppm").map(document => `${document.id}:${document.version}`).sort()])} />
                 <OfferingFileCockpit key={`${l.ref}:${viewerKey}`} listingRef={l.ref} viewerId={viewerKey} enabled={allowed} />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className="card">
