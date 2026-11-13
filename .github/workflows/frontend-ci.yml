@@ -42,7 +42,7 @@ jobs:
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
       - name: Test investor display rules
-        run: node --test tests/investor-economics.test.mjs tests/monthly-investor-returns.test.mjs
+        run: node --test tests/investor-economics.test.mjs tests/monthly-investor-returns.test.mjs tests/marketplace-operating-projections.test.mjs
       - name: Check TypeScript
         run: pnpm exec tsc --noEmit --pretty false
       - name: Build production portal
