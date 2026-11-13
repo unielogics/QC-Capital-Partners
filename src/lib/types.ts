@@ -36,6 +36,9 @@ export type Subscription = {
 /** Original / with the plan / change, as the desk's cockpit computed it. */
 export type PlanPair = { before: number | null; after: number | null; change: number | null };
 export type ListingFinancials = {
+  operating_projection?: import("./marketplaceOperatingProjection").MarketplaceOperatingProjection | null;
+  pending_operating_projection?: import("./marketplaceOperatingProjection").MarketplaceOperatingProjection | null;
+  financial_update_pending?: boolean;
   deal_budget?: import("./investorEconomics").InvestorBudget | null;
   generated_at?: string | null; refreshed_at?: string | null;
   bank_months?: number | null; bank_months_accepted?: number | null; avg_monthly_deposits?: number | null; annualized_deposits?: number | null;
