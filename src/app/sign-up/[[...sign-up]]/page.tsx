@@ -15,6 +15,9 @@ export default function SignUpPage() {
   const { isLoaded, isSignedIn } = useAuth();
   const router = useRouter();
   const [accepted, setAccepted] = useState(false);
+  const [emailMarketing, setEmailMarketing] = useState(false);
+  const [updatesEmail, setUpdatesEmail] = useState("");
+  const [confirmedEmail, setConfirmedEmail] = useState("");
 
   useEffect(() => {
     if (isLoaded && isSignedIn) router.replace("/");
@@ -40,12 +43,42 @@ export default function SignUpPage() {
               <a href={`${FUNDING_URL}/disclosures`} target="_blank" rel="noopener noreferrer" className="font-semibold underline">Disclosures</a>. I understand that creating an account is not an investment, that no offering is shown to me until my accreditation is reviewed and the waiting period has passed, and that participations are restricted securities that are not FDIC insured and may lose value.
             </span>
           </label>
+          <label className="mt-3 flex items-start gap-3 cursor-pointer text-sm leading-[1.55]">
+            <input type="checkbox" className="mt-0.5 w-[18px] h-[18px] flex-none accent-accent-600"
+              checked={emailMarketing} onChange={(e) => {
+                setEmailMarketing(e.target.checked);
+                setConfirmedEmail("");
+              }} />
+            Email me financing education and lending updates from Qualified Commercial. I can unsubscribe at any time.
+          </label>
+          {emailMarketing && (
+            <form className="mt-2 grid gap-2 text-sm" onSubmit={(e) => {
+              e.preventDefault();
+              setConfirmedEmail(updatesEmail.trim().toLowerCase());
+            }}>
+              <label htmlFor="signup-updates-email">Email address for updates and account creation</label>
+              <input id="signup-updates-email" className="input" type="email" autoComplete="email" required
+                value={updatesEmail} onChange={(e) => {
+                  setUpdatesEmail(e.target.value);
+                  setConfirmedEmail("");
+                }} />
+              {!confirmedEmail && <button type="submit" className="btn btn-secondary">Use this address</button>}
+            </form>
+          )}
           <p className={`fineprint m-0 mt-2 ${accepted ? "text-[var(--color-success)]" : ""}`}>{accepted ? "Consent recorded. You can create your account below." : "Check the box to enable account creation."}</p>
         </div>
-        {accepted ? (
-          <SignUp routing="path" path="/sign-up" forceRedirectUrl="/" unsafeMetadata={{ console: "capital" }} />
+        {accepted && (!emailMarketing || confirmedEmail) ? (
+          <SignUp routing="path" path="/sign-up" forceRedirectUrl="/"
+            initialValues={emailMarketing ? { emailAddress: confirmedEmail } : undefined}
+            unsafeMetadata={{
+              console: "capital",
+              ...(emailMarketing ? { qc_lending_updates_v1: true, qc_lending_updates_email_v1: confirmedEmail } : {}),
+            }}
+          />
         ) : (
-          <div className="card w-full border-dashed text-center text-sm text-mutedFg">The account form appears once you accept the documents above.</div>
+          <div className="card w-full border-dashed text-center text-sm text-mutedFg">
+            {accepted ? "Confirm your email above or turn off optional updates to continue." : "The account form appears once you accept the documents above."}
+          </div>
         )}
         <p className="fineprint mx-auto text-center">Already a member? <a href="/sign-in" className="font-semibold">Sign in</a>.</p>
       </div>
